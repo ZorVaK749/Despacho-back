@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db-despachos:
+    image: mysql:8.0
+    container_name: bd-despachos
+    environment:
+      MYSQL_DATABASE: despachos_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: adminpassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - despachos-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - backend-net
+
+  backend-despachos:
+    build: .
+    container_name: api-despachos
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-despachos:3306/despachos_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: adminpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update   # solo para desarrollo, en prod sería validate
+    depends_on:
+      db-despachos:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - backend-net
+      - frontend-net
+
+volumes:
+  despachos-db-data:
+    name: despachos-db-data
+
+networks:
+  backend-net:
+  frontend-net:
+    name: despachos_frontend
